@@ -11,10 +11,10 @@ document.addEventListener("DOMContentLoaded", function () {
   form.addEventListener("submit", handleFormSubmit);
 
   /**
-   * Handles the form submission and file upload simulation
+   * Handles the form submission and uploads the file to the backend
    * @param {Event} e - The form submission event
    */
-  function handleFormSubmit(e) {
+  async function handleFormSubmit(e) {
     e.preventDefault();
 
     if (!validateFile()) {
@@ -22,7 +22,44 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     showUploadElements();
-    simulateUpload();
+
+    const formData = new FormData();
+    formData.append("resume", fileInput.files[0]);
+
+    // Use XMLHttpRequest to track upload progress
+    const xhr = new XMLHttpRequest();
+
+    xhr.open("POST", "http://localhost:3002/api/resumes/upload", true);
+
+    // Track upload progress
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) {
+        const progress = Math.round((e.loaded / e.total) * 100);
+        updateProgress(progress); // Update the progress bar
+      }
+    });
+
+    // Handle the response
+    xhr.onload = function () {
+      if (xhr.status === 201) {
+        uploadStatus.innerHTML =
+          '<span class="text-success">Upload completed!</span>';
+        fetchResumes(); // Optionally fetch the updated list of resumes
+      } else {
+        const error = JSON.parse(xhr.responseText);
+        uploadStatus.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+      }
+      resetUploadForm();
+    };
+
+    xhr.onerror = function () {
+      console.error("Error uploading file");
+      uploadStatus.innerHTML =
+        '<span class="text-danger">An error occurred!</span>';
+      resetUploadForm();
+    };
+
+    xhr.send(formData); // Send the form data
   }
 
   /**
@@ -46,21 +83,6 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /**
-   * Simulates the file upload process
-   */
-  function simulateUpload() {
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 5;
-      updateProgress(progress);
-
-      if (progress >= 100) {
-        handleUploadComplete(interval);
-      }
-    }, 200);
-  }
-
-  /**
    * Updates the progress bar
    * @param {number} progress - The current progress percentage
    */
@@ -71,21 +93,6 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /**
-   * Handles the upload completion
-   * @param {number} interval - The interval ID to clear
-   */
-  function handleUploadComplete(interval) {
-    clearInterval(interval);
-    uploadStatus.innerHTML =
-      '<span class="text-success">Upload completed!</span>';
-
-    // Reset after 3 seconds
-    setTimeout(() => {
-      resetUploadForm();
-    }, 3000);
-  }
-
-  /**
    * Resets the form and hides upload elements
    */
   function resetUploadForm() {
@@ -93,4 +100,43 @@ document.addEventListener("DOMContentLoaded", function () {
     uploadStatus.classList.add("d-none");
     form.reset();
   }
+
+  /**
+   * Fetches and displays the list of uploaded resumes
+   */
+  /**
+   * Fetches and displays the list of uploaded resumes
+   */
+  async function fetchResumes() {
+    try {
+      const response = await fetch("http://localhost:3002/api/resumes");
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const resumes = await response.json();
+
+      const resumeList = document.getElementById("resumeList");
+      resumeList.innerHTML = ""; // Clear the list
+
+      resumes.forEach((resume) => {
+        const listItem = document.createElement("li");
+        listItem.classList.add("list-group-item"); // Add Bootstrap styling
+
+        // Create a clickable link for the resume
+        listItem.innerHTML = `
+          <a href="http://localhost:3002/api/resumes/${resume._id}" target="_blank">${resume.filename}</a>
+        `;
+        resumeList.appendChild(listItem);
+      });
+    } catch (err) {
+      console.error("Error fetching resumes:", err);
+      uploadStatus.innerHTML =
+        '<span class="text-danger">Failed to fetch resumes.</span>';
+    }
+  }
+
+  // Fetch resumes on page load
+  fetchResumes();
 });
