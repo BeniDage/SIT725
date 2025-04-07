@@ -29,14 +29,14 @@ MongoClient.connect(mongoURI, {
   useUnifiedTopology: true,
 })
   .then((client) => {
-    db = client.db(); // Get the database instance
+    db = client.db();
     gfsBucket = new GridFSBucket(db, { bucketName: "uploads" }); // Initialize GridFSBucket
     console.log("Connected to MongoDB");
 
     // Pass the database and GridFSBucket instances to routes
     app.use((req, res, next) => {
-      req.db = db; // Attach the database instance to the request object
-      req.gfsBucket = gfsBucket; // Attach the GridFSBucket instance to the request object
+      req.db = db;
+      req.gfsBucket = gfsBucket;
       next();
     });
 

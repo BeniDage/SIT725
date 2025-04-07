@@ -59,7 +59,7 @@ exports.getResumeById = async (req, res) => {
 // Upload a new resume
 exports.uploadResume = async (req, res) => {
   try {
-    const gfsBucket = req.gfsBucket; // Access the GridFSBucket instance from req
+    const gfsBucket = req.gfsBucket;
 
     if (!req.file) {
       return res.status(400).send("No file uploaded");
