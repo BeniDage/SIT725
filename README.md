@@ -170,3 +170,87 @@ Before running the application, make sure you have the following installed:
    - `POST /api/resumes/upload`: Upload a resume.
    - `GET /api/resumes`: Fetch the list of uploaded resumes.
    - `GET /api/resumes/:id`: Stream a specific resume by its ID.
+
+## 5.2C - MVC-Based Resume Management System
+
+The `5.2C` folder contains a refactored version of the resume management system that follows the **MVC (Model-View-Controller)** architecture. It separates the database logic, business logic, and routing for better maintainability and scalability.
+
+### Features
+
+- Follows the MVC architecture for better code organization.
+- Upload resumes (PDF, DOC, DOCX) and store them in MongoDB GridFS.
+- Stream resumes directly from the database.
+- View a list of uploaded resumes with clickable links.
+- Responsive UI with Bootstrap 5.
+
+### Prerequisites
+
+Before running the application, make sure you have the following installed:
+
+- Node.js (v14 or higher)
+- npm (Node Package Manager)
+- MongoDB (v4.x or higher)
+
+### Installation and Setup
+
+1. Navigate to the 5.2C directory:
+
+   ```bash
+   cd 5.2C
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+3. Create a `.env` file in the `5.2C` directory and add your MongoDB connection string:
+
+   ```
+   MONGODB_URI=mongodb://localhost:27017/sit725
+   ```
+
+   - Replace `mongodb://localhost:27017/sit725` with your actual MongoDB connection string.
+
+4. Start the MongoDB server:
+
+   ```bash
+   mongod
+   ```
+
+5. Start the application:
+
+   ```bash
+   node server.js
+   ```
+
+6. Open your browser and visit:
+   ```
+   http://localhost:3002
+   ```
+
+### Project Structure
+
+```
+5.2C/
+├── controllers/
+│   └── resumeController.js  # Handles request/response logic
+├── models/
+│   └── resumeModel.js       # Handles database operations
+│── db/
+│   └── db.js                # Handles MongoDB connection
+|
+├── public/
+│   ├── css/
+│   │   └── styles.css       # Frontend styles
+│   └── js/
+│       └── script.js        # Frontend logic
+│
+├── routers/
+│   └── resumeRoutes.js      # Defines API routes for resumes
+|
+├── server.js                # Express server configuration
+│── index.html               # Frontend UI
+└── package.json             # Project dependencies
+```
