@@ -1,8 +1,10 @@
 const { ObjectId } = require("mongodb");
+const pdfParse = require("pdf-parse");
 const {
   getAllResumes,
   getResumeById,
   uploadResumeToGridFS,
+  evaluateResume,
 } = require("../models/resumeModel");
 
 // Fetch all uploaded resumes
@@ -57,22 +59,62 @@ exports.getResumeById = async (req, res) => {
   }
 };
 
-// Upload a new resume
 exports.uploadResume = async (req, res) => {
   try {
-    const gfsBucket = req.gfsBucket; // Access the GridFSBucket instance from req
+    console.log("Starting uploadResume function");
+
+    const gfsBucket = req.gfsBucket;
 
     if (!req.file) {
+      console.log("No file uploaded");
       return res.status(400).send("No file uploaded");
     }
 
-    const fileId = await uploadResumeToGridFS(gfsBucket, req.file); // Call the model function
+    console.log("Uploading file to GridFS");
+    const fileId = await uploadResumeToGridFS(gfsBucket, req.file);
+
+    console.log("Extracting text from the uploaded file");
+    let extractedText = "";
+    if (req.file.mimetype === "application/pdf") {
+      extractedText = await pdfParse(req.file.buffer).then((data) => data.text);
+    } else if (
+      req.file.mimetype ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ) {
+      extractedText = await mammoth
+        .extractRawText({ buffer: req.file.buffer })
+        .then((result) => result.value);
+    } else {
+      console.log("Unsupported file format");
+      return res.status(400).send("Unsupported file format");
+    }
+
+    console.log("Sending response back to the frontend");
     res.status(201).send({
       message: "Resume uploaded successfully",
       fileId: fileId,
+      extractedText: extractedText,
     });
   } catch (err) {
     console.error("Error uploading resume:", err);
     res.status(500).send("Error uploading resume");
+  }
+};
+
+exports.evaluateResume = async (req, res) => {
+  try {
+    const { resumeText, jobDescription } = req.body;
+
+    if (!resumeText || !jobDescription) {
+      return res
+        .status(400)
+        .json({ message: "Both resume text and job description are required" });
+    }
+
+    const evaluation = await evaluateResume(resumeText, jobDescription);
+    res.json({ evaluation });
+  } catch (err) {
+    console.error("Error evaluating resume:", err);
+    res.status(500).json({ message: "Error evaluating resume" });
   }
 };

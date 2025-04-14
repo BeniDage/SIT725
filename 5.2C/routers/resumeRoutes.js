@@ -12,5 +12,6 @@ const upload = multer({ storage });
 router.get("/", resumeController.getAllResumes); // Fetch all resumes
 router.get("/:id", resumeController.getResumeById); // Stream a specific resume
 router.post("/upload", upload.single("resume"), resumeController.uploadResume); // Upload a new resume
+router.post("/evaluate", resumeController.evaluateResume);
 
 module.exports = router;

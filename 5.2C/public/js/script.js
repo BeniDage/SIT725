@@ -5,6 +5,28 @@ document.addEventListener("DOMContentLoaded", function () {
   const progressDiv = document.getElementById("uploadProgress");
   const uploadStatus = document.getElementById("uploadStatus");
   const fileInput = document.getElementById("resumeFile");
+  const getFeedbackBtn = document.getElementById("getFeedbackBtn");
+  const feedbackResult = document.getElementById("feedbackResult");
+
+  // Initialize the Highcharts pie chart
+  const chart = Highcharts.chart("container", {
+    chart: {
+      type: "pie",
+    },
+    title: {
+      text: "Resume Strengths",
+    },
+    series: [
+      {
+        name: "Score",
+        data: [
+          { name: "Technical Skills", y: 0 },
+          { name: "Leadership", y: 0 },
+          { name: "Relevance", y: 0 },
+        ],
+      },
+    ],
+  });
 
   // Handle form submission
   form.addEventListener("submit", handleFormSubmit);
@@ -41,9 +63,21 @@ document.addEventListener("DOMContentLoaded", function () {
     // Handle the response
     xhr.onload = function () {
       if (xhr.status === 201) {
+        const response = JSON.parse(xhr.responseText);
+        console.log("Extracted Text:", response.extractedText); // Log the extracted text
+
         uploadStatus.innerHTML =
           '<span class="text-success">Upload completed!</span>';
-        fetchResumes(); // Optionally fetch the updated list of resumes
+
+        // Check if extractedText is available
+        if (response.extractedText) {
+          // Display the extracted text in the textarea
+          const extractedTextArea = document.getElementById("extractedText");
+          extractedTextArea.value = response.extractedText;
+
+          // Show the "Get Your Instant Feedback" button
+          getFeedbackBtn.classList.remove("d-none");
+        }
       } else {
         const error = JSON.parse(xhr.responseText);
         uploadStatus.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
@@ -60,6 +94,76 @@ document.addEventListener("DOMContentLoaded", function () {
 
     xhr.send(formData); // Send the form data
   }
+
+  // Handle feedback button click
+  getFeedbackBtn.addEventListener("click", async () => {
+    // Get the extracted text from the textarea
+    const extractedTextArea = document.getElementById("extractedText");
+    const jobDescriptionArea = document.getElementById("jobDescription");
+    const resumeText = extractedTextArea.value;
+    const jobDescription = jobDescriptionArea.value;
+
+    if (!resumeText || !jobDescription) {
+      alert("Both resume text and job description are required.");
+      return;
+    }
+
+    try {
+      // Send the extracted text to the backend for evaluation
+      const response = await fetch("/api/resumes/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resumeText, jobDescription }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Backend Response:", data); // full response
+
+        const evaluationData = data.evaluation || {};
+        const scores = evaluationData.scores || {};
+        const explanation = evaluationData.explanation || {};
+
+        console.log("Evaluation Data:", evaluationData); // Log the evaluation data
+        console.log("Scores:", scores); // Log the scores
+        console.log("Explanation:", explanation); // Log the explanation
+
+        const technicalSkills = scores?.["Technical Skills"] ?? 0;
+        const leadership = scores?.Leadership ?? 0;
+        const relevance = scores?.Relevance ?? 0;
+        
+
+        console.log("Scores:", { technicalSkills, leadership, relevance });
+
+        // Display the summary in the feedback result area
+        feedbackResult.innerHTML = `<span class="text-success">${summaryText}</span>`;
+
+        // Display the explanation in a separate section (e.g., #explanationArea)
+        const explanationArea = document.getElementById("explanationArea");
+        if (explanationArea) {
+          explanationArea.innerHTML = `<pre>${explanation}</pre>`;
+        } else {
+          console.error(
+            "Element with id 'explanationArea' not found in the DOM."
+          );
+        }
+
+        // Update Highcharts
+        chart.series[0].setData([
+          { name: "Technical Skills", y: technicalSkills },
+          { name: "Leadership", y: leadership },
+          { name: "Relevance", y: relevance },
+        ]);
+      } else {
+        const error = await response.json();
+        feedbackResult.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+      }
+    } catch (err) {
+      console.error("Error evaluating resume:", err);
+      feedbackResult.innerHTML =
+        '<span class="text-danger">An error occurred while evaluating the resume.</span>';
+    }
+  });
 
   /**
    * Validates if a file is selected
@@ -99,40 +203,4 @@ document.addEventListener("DOMContentLoaded", function () {
     uploadStatus.classList.add("d-none");
     form.reset();
   }
-
-  /**
-   * Fetches and displays the list of uploaded resumes
-   */
-  //Fetches and displays the list of uploaded resumes
-  async function fetchResumes() {
-    try {
-      const response = await fetch("http://localhost:3002/api/resumes");
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const resumes = await response.json();
-
-      const resumeList = document.getElementById("resumeList");
-      resumeList.innerHTML = "";
-
-      resumes.forEach((resume) => {
-        const listItem = document.createElement("li");
-        listItem.classList.add("list-group-item");
-
-        listItem.innerHTML = `
-          <a href="http://localhost:3002/api/resumes/${resume._id}" target="_blank">${resume.filename}</a>
-        `;
-        resumeList.appendChild(listItem);
-      });
-    } catch (err) {
-      console.error("Error fetching resumes:", err);
-      uploadStatus.innerHTML =
-        '<span class="text-danger">Failed to fetch resumes.</span>';
-    }
-  }
-
-  // Fetch resumes on page load
-  fetchResumes();
 });
