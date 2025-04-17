@@ -1,3 +1,5 @@
+//import Highcharts from "highcharts";
+
 let chart;
 
 export function initializeChart() {
