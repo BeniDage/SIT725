@@ -1,12 +1,14 @@
 import { handleFileUpload } from "./upload.js";
 import { handleFeedback } from "./feedback.js";
 import { initializeChart } from "./chart.js";
+import { initializeNotifications } from "./notification.js";
 
 // Initialize components
 document.addEventListener("DOMContentLoaded", () => {
   initializeChart();
   handleFileUpload();
   handleFeedback();
+  initializeNotifications();
 
   // Load Navbar
 });

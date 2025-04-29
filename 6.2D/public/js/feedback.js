@@ -16,11 +16,15 @@ export function handleFeedback() {
     }
 
     try {
-      const response = await fetch("/api/resumes/evaluate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeText, jobDescription }),
-      });
+      console.log("Sending request to backend...");
+      const response = await fetch(
+        "http://localhost:3002/api/resumes/evaluate",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ resumeText, jobDescription }),
+        }
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -41,6 +45,7 @@ export function handleFeedback() {
         feedbackResult.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
       }
     } catch (err) {
+      console.error("Fetch error:", err);
       feedbackResult.innerHTML =
         '<span class="text-danger">An error occurred while evaluating the resume.</span>';
     }

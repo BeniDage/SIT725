@@ -112,6 +112,15 @@ exports.evaluateResume = async (req, res) => {
     }
 
     const evaluation = await evaluateResume(resumeText, jobDescription);
+    const io = req.io; // Access the socket.io instance from req
+    if (io) {
+      io.emit("feedbackReady", {
+        message: "Evaluation result is ready",
+        //evaluation: evaluation,
+      }); // Emit the evaluation result to all connected clients
+    } else {
+      console.error("Socket.io instance not found in request object");
+    }
     res.json({ evaluation });
   } catch (err) {
     console.error("Error evaluating resume:", err);

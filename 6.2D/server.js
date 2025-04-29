@@ -10,6 +10,21 @@ const resumeRoutes = require("./routers/resumeRoutes");
 const app = express();
 const port = 3002;
 
+// Socket.IO setup
+const http = require("http");
+const { Server } = require("socket.io");
+const server = http.createServer(app); // Create an HTTP server
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000", // Allow requests from your frontend
+  },
+});
+
+app.use((req, res, next) => {
+  req.io = io; // Attach the socket.io instance to the request object
+  next();
+});
+
 // Middleware
 app.use(
   cors({
@@ -20,7 +35,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Serve static files from the 'public' directory
-app.use(express.static(__dirname + "/public"));
+//app.use(express.static(__dirname + "/public"));
 
 // MongoDB Connection
 connectToMongoDB()
@@ -36,13 +51,13 @@ connectToMongoDB()
     app.use("/api/resumes", resumeRoutes);
 
     // Route for the root path
-    app.get("/", (req, res) => {
+    /*app.get("/", (req, res) => {
       res.sendFile(__dirname + "/index.html");
     });
-
+    */
     // Start the server
-    app.listen(port, () => {
-      console.log("App listening on port " + port);
+    server.listen(port, () => {
+      console.log("Server (HTTP + Socket.IO) listening on port " + port);
     });
   })
   .catch((err) => {
